@@ -16,7 +16,7 @@ const highlights = [
   {
     icon: ShieldCheck,
     title: "Temiz evler",
-    text: "Profil, puan ve yorumlara bakarak güvenle booklayın.",
+    text: "Profil, puan ve yorumlara bakarak güvenle randevu oluşturun.",
   },
 ];
 
@@ -31,11 +31,10 @@ export default function AppHomePage() {
             
           </p>
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-            Günlük ve aylık temizlik personeli kiralayın.
+          Ev, ofis veya bakıcı ihtiyaçlarınız için güvenilir personeller tek platformda.
           </h1>
           <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-            İzmir içinde güvenilir temizlikçileri inceleyin, müsait saatleri
-            görün ve booklamak için dokunun. Temiz evler, net fiyatlar.
+          Ev temizliğinden kurumsal ofislere, periyodik bakıcı desteğine kadar aradığınız uzmanı bulun. Profilleri inceleyin, değerlendirmeleri görün ve randevunuzu anında oluşturun.
           </p>
           <div className="flex flex-wrap gap-3 pt-1">
             <Button
@@ -43,7 +42,7 @@ export default function AppHomePage() {
               size="lg"
               className="rounded-full px-8"
             >
-              Booklamak için tıklayın
+              Randevu almak için tıklayın
             </Button>
             <Button
               render={<Link href="/bookings" />}
@@ -77,17 +76,17 @@ export default function AppHomePage() {
       <section className="rounded-3xl border border-dashed border-primary/25 bg-primary/5 px-6 py-8 text-center">
         <Home className="mx-auto size-8 text-primary" />
         <h2 className="mt-4 font-heading text-2xl font-semibold tracking-tight">
-          Temiz evler, kolay booklama
+          Temiz evler, kolay randevu alma
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Keşfet sekmesinden İzmir’deki temizlikçileri özellikleriyle görün.
+          Keşfet sekmesinden temizlik personellerini özellikleriyle görün.
           Profile tıklayınca yorumlar, özel istekler ve müsait saatler açılır.
         </p>
         <Button
           render={<Link href="/dashboard" />}
           className="mt-5 rounded-full"
         >
-          Temizlikçileri gör
+          Temizlik personellerini gör
         </Button>
       </section>
     </div>
