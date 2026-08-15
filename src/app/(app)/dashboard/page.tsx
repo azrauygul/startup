@@ -40,7 +40,7 @@ export default async function DashboardPage({
       <div className="space-y-6">
         <div className="space-y-2">
           <h1 className="font-heading text-3xl font-semibold tracking-tight">
-            İzmir temizlikçileri
+            Temizlik Personelleri
           </h1>
           <SetupBanner show />
         </div>
@@ -134,8 +134,7 @@ export default async function DashboardPage({
           İzmir temizlikçileri
         </h1>
         <p className="max-w-2xl text-muted-foreground">
-          Günlük veya aylık seçin. Karttaki özelliklere bakın, tıklayınca
-          detay, yorum ve müsait saatleri görün.
+          Karttaki özelliklere bakın, tıklayınca detay, yorum ve müsait saatleri görün.
         </p>
       </div>
 
