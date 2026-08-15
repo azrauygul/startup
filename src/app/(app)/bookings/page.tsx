@@ -107,8 +107,8 @@ export default async function BookingsPage() {
             const wa = whatsappLink(
               contactPhone,
               isCleaner
-                ? `Merhaba ${customerName}, Temizly talebiniz hakkında yazıyorum.`
-                : `Merhaba ${cleanerName}, Temizly üzerinden oluşturduğum kiralama talebi hakkında yazıyorum.`,
+                ? `Merhaba ${customerName}, mismis talebiniz hakkında yazıyorum.`
+                : `Merhaba ${cleanerName}, mismis üzerinden oluşturduğum kiralama talebi hakkında yazıyorum.`,
             );
             const phone = telLink(contactPhone);
             const existingReview = reviewByBooking.get(booking.id);

@@ -13,7 +13,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Temizly — Güvenilir temizlik personeli",
+  title: "mismis — Güvenilir temizlik personeli",
   description:
     "Günlük veya aylık temizlik personeli kiralayın. Talep oluşturun, personel onaylasın.",
 };

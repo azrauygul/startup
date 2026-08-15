@@ -31,7 +31,7 @@ export default async function HomePage() {
             <Sparkles className="size-4" />
           </span>
           <span className="font-heading text-xl font-semibold tracking-tight">
-            Temizly
+            mismis
           </span>
         </div>
         <div className="flex gap-2">
@@ -52,7 +52,7 @@ export default async function HomePage() {
         ) : null}
         <div className="animate-fade-up max-w-2xl space-y-6">
           <p className="font-heading text-sm font-semibold tracking-[0.2em] text-primary uppercase">
-            Temizly
+            mismis
           </p>
           <h1 className="font-heading text-4xl leading-[1.1] font-semibold tracking-tight sm:text-5xl md:text-6xl">
             Güvenilir temizlik personeli, günlük veya aylık.
