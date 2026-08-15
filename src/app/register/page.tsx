@@ -1,4 +1,4 @@
-import { CleanerSetupForm }  from "@/components/auth/register-form";
+import { RegisterForm }  from "@/components/auth/register-form";
 import { SetupBanner } from "@/components/setup-banner";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { Sparkles } from "lucide-react";
@@ -21,7 +21,7 @@ export default function RegisterPage() {
           </p>
         </div>
         <SetupBanner show={!configured} />
-        <CleanerSetupForm cleaner={null} availability={[]} />
+        <RegisterForm />
       </div>
     </main>
   );
