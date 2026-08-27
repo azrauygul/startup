@@ -37,8 +37,8 @@ export default async function PanelPage() {
         <p className="mt-2 text-muted-foreground">
           Bu alan yalnızca temizlik personeli hesapları içindir.
         </p>
-        <Button render={<Link href="/home" />} className="mt-4 rounded-full">
-          Home’a dön
+        <Button render={<Link href="/dashboard" />} className="mt-4 rounded-full">
+          Keşfet’e dön
         </Button>
       </div>
     );
@@ -79,8 +79,9 @@ export default async function PanelPage() {
           Operasyon paneli
         </h1>
         <p className="text-muted-foreground">
-          Profil ve müsaitlik yönetin, gelen talepleri onaylayın, müşteriyle
-          iletişime geçin.
+          {typedCleaner
+            ? "Profil ve müsaitlik yönetin, gelen talepleri onaylayın, müşteriyle iletişime geçin."
+            : "Hesabın hazır. Aşağıdaki formdan profil kartını oluştur; kayıt olduktan sonra Keşfet’te görünmesi için bu adım gerekli."}
         </p>
       </div>
 
@@ -97,6 +98,7 @@ export default async function PanelPage() {
         }
         availability={(availability ?? []) as CleanerAvailability[]}
         avatarUrl={profile.avatar_url}
+        hasProfile={Boolean(typedCleaner)}
       />
 
       <section className="space-y-4">

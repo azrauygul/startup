@@ -23,7 +23,7 @@ const highlights = [
 export default function AppHomePage() {
   return (
     <div className="animate-fade-up space-y-10 pb-4">
-      <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-[linear-gradient(160deg,var(--brand-soft),var(--background)_55%,oklch(0.97_0.02_185))] px-6 py-10 sm:px-10">
+      <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-[linear-gradient(160deg,var(--brand-soft),var(--background)_55%,oklch(0.97_0.01_264))] px-6 py-10 sm:px-10">
         <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-primary/10 blur-2xl" />
         <div className="relative max-w-xl space-y-5">
           <p className="font-heading text-sm font-semibold tracking-[0.18em] text-primary uppercase">
@@ -31,10 +31,12 @@ export default function AppHomePage() {
             
           </p>
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-          Ev, ofis veya bakıcı ihtiyaçlarınız için güvenilir personeller tek platformda.
+            Türkiye genelinde güvenilir temizlik personeli
           </h1>
           <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Ev temizliğinden kurumsal ofislere, periyodik bakıcı desteğine kadar aradığınız uzmanı bulun. Profilleri inceleyin, değerlendirmeleri görün ve randevunuzu anında oluşturun.
+            İstanbul&apos;dan İzmir&apos;e, 81 ilde hizmet veren personelleri
+            Keşfet sayfasından filtreleyin. Profilleri inceleyin, değerlendirmeleri
+            görün ve randevunuzu oluşturun.
           </p>
           <div className="flex flex-wrap gap-3 pt-1">
             <Button

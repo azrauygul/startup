@@ -14,10 +14,11 @@ export default function RegisterPage() {
             <Sparkles className="size-5" />
           </div>
           <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Temizly&apos;e katıl
+            mismis&apos;e katıl
           </h1>
           <p className="text-sm text-muted-foreground">
-            Müşteri veya temizlik personeli olarak kayıt ol.
+            Hesabını oluştur. Temizlik personeli isen profil kartını kayıttan
+            sonra operasyon panelinde doldurursun.
           </p>
         </div>
         <SetupBanner show={!configured} />

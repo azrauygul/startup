@@ -7,9 +7,16 @@ import {
   isSupabaseConfigured,
   SUPABASE_SETUP_MESSAGE,
 } from "@/lib/supabase/env";
+import {
+  isCleaningType,
+  isTurkeyCity,
+  MIN_DAILY_RATE,
+  MIN_MONTHLY_RATE,
+} from "@/lib/constants";
+import { getDistrictsForCity } from "@/lib/turkey-districts";
 import type { BookingStatus, BookingType, UserRole } from "@/lib/types";
 
-export type ActionResult = { error?: string; success?: string };
+export type ActionResult = { error?: string; success?: string; url?: string };
 
 function requireSupabase(): ActionResult | null {
   if (!isSupabaseConfigured()) {
@@ -38,7 +45,9 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
 
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  const fullName = String(formData.get("full_name") ?? "");
+  const fullName = String(
+    formData.get("full_name") ?? formData.get("fullName") ?? "",
+  ).trim();
   const phone = String(formData.get("phone") ?? "");
   const role = String(formData.get("role") ?? "customer") as UserRole;
 
@@ -75,7 +84,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     };
   }
 
-  redirect("/home");
+  redirect(role === "cleaner" ? "/panel" : "/dashboard");
 }
 
 export async function signIn(formData: FormData): Promise<ActionResult> {
@@ -102,7 +111,7 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
     };
   }
 
-  redirect("/home");
+  redirect("/dashboard");
 }
 
 export async function signOut() {
@@ -112,6 +121,57 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function uploadAvatar(formData: FormData): Promise<ActionResult> {
+  const setup = requireSupabase();
+  if (setup) return setup;
+
+  const file = formData.get("avatar");
+  if (!(file instanceof Blob) || file.size === 0) {
+    return { error: "Geçerli bir fotoğraf seçin." };
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    return { error: "Kırpılmış fotoğraf 2 MB'dan küçük olmalı." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Giriş yapmalısınız." };
+
+  const path = `${user.id}/avatar-${Date.now()}.jpg`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, buffer, {
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+
+  if (uploadError) {
+    return {
+      error:
+        "Fotoğraf yüklenemedi. Supabase Storage'da 'avatars' bucket'ını oluşturduğunuzdan emin olun.",
+    };
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("avatars").getPublicUrl(path);
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ avatar_url: publicUrl })
+    .eq("id", user.id);
+
+  if (profileError) return { error: profileError.message };
+
+  revalidatePath("/panel");
+  revalidatePath("/dashboard");
+  return { success: "Fotoğraf yüklendi.", url: publicUrl };
 }
 
 export async function createBooking(input: {
@@ -243,6 +303,29 @@ export async function ensureCleanerProfile(input: {
     return { error: "Bu işlem sadece temizlik personeli için." };
   }
 
+  if (!isTurkeyCity(input.city)) {
+    return { error: "Geçerli bir il seçin." };
+  }
+
+  const districts = getDistrictsForCity(input.city);
+  const serviceAreas = input.serviceAreas.filter((a) => districts.includes(a));
+  if (serviceAreas.length === 0) {
+    return { error: "En az bir ilçe / semt seçin." };
+  }
+
+  const services = input.services.filter(isCleaningType);
+  if (services.length === 0) {
+    return { error: "En az bir temizlik türü seçin." };
+  }
+
+  if (input.dailyRate < MIN_DAILY_RATE) {
+    return { error: `Günlük ücret en az ${MIN_DAILY_RATE} ₺ olmalı.` };
+  }
+
+  if (input.monthlyRate < MIN_MONTHLY_RATE) {
+    return { error: `Aylık ücret en az ${MIN_MONTHLY_RATE.toLocaleString("tr-TR")} ₺ olmalı.` };
+  }
+
   if (input.avatarUrl !== undefined) {
     const { error: avatarError } = await supabase
       .from("profiles")
@@ -254,12 +337,12 @@ export async function ensureCleanerProfile(input: {
   }
 
   const payload = {
-    bio: input.bio,
+    bio: input.bio.trim(),
     daily_rate: input.dailyRate,
     monthly_rate: input.monthlyRate,
-    services_offered: input.services,
-    service_areas: input.serviceAreas,
-    special_requests: input.specialRequests,
+    services_offered: services,
+    service_areas: serviceAreas,
+    special_requests: input.specialRequests.trim(),
     city: input.city,
   };
 
@@ -273,14 +356,29 @@ export async function ensureCleanerProfile(input: {
     const { error } = await supabase
       .from("cleaners")
       .update(payload)
-      .eq("id", existing.id);
+      .eq("id", existing.id)
+      .eq("profile_id", user.id);
     if (error) return { error: error.message };
   } else {
+    const { count } = await supabase
+      .from("cleaners")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", user.id);
+
+    if (count && count > 0) {
+      return { error: "Her personel yalnızca bir profil kartı oluşturabilir." };
+    }
+
     const { error } = await supabase.from("cleaners").insert({
       profile_id: user.id,
       ...payload,
     });
-    if (error) return { error: error.message };
+    if (error) {
+      if (error.code === "23505") {
+        return { error: "Bu hesap için zaten bir profil kartı var." };
+      }
+      return { error: error.message };
+    }
   }
 
   revalidatePath("/panel");
