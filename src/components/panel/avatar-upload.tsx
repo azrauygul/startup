@@ -20,15 +20,16 @@ type Props = {
   className?: string;
 };
 
+const PREVIEW_SIZE = 320;
+
 async function getCroppedBlob(
   imageSrc: string,
   pixelCrop: Area,
 ): Promise<Blob> {
   const image = await loadImage(imageSrc);
   const canvas = document.createElement("canvas");
-  const size = 400;
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = PREVIEW_SIZE;
+  canvas.height = PREVIEW_SIZE;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas desteklenmiyor");
 
@@ -40,16 +41,25 @@ async function getCroppedBlob(
     pixelCrop.height,
     0,
     0,
-    size,
-    size,
+    PREVIEW_SIZE,
+    PREVIEW_SIZE,
   );
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("Görsel işlenemedi"))),
       "image/jpeg",
-      0.88,
+      0.82,
     );
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
 }
 
@@ -66,11 +76,14 @@ export function AvatarUpload({ value, onChange, className }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedArea, setCroppedArea] = useState<Area | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const displayUrl = preview ?? value ?? null;
 
   const onCropComplete = useCallback((_: Area, area: Area) => {
     setCroppedArea(area);
@@ -101,15 +114,24 @@ export function AvatarUpload({ value, onChange, className }: Props) {
     startTransition(async () => {
       try {
         const blob = await getCroppedBlob(imageSrc, croppedArea);
+        const localPreview = await blobToDataUrl(blob);
+        setPreview(localPreview);
+        onChange(localPreview);
+
         const formData = new FormData();
-        formData.append("avatar", blob, "avatar.jpg");
+        formData.append(
+          "avatar",
+          new File([blob], "avatar.jpg", { type: "image/jpeg" }),
+        );
         const result = await uploadAvatar(formData);
         if (result.error) {
           setError(result.error);
           return;
         }
         if (result.url) {
+          setPreview(result.url);
           onChange(result.url);
+          setError(null);
           setOpen(false);
           setImageSrc(null);
         }
@@ -134,9 +156,18 @@ export function AvatarUpload({ value, onChange, className }: Props) {
 
       <div className="flex items-center gap-4">
         <div className="relative size-24 overflow-hidden rounded-2xl border bg-muted">
-          {value ? (
+          {displayUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt="Profil" className="size-full object-cover" />
+            <img
+              src={displayUrl}
+              alt="Profil"
+              className="size-full object-cover"
+              onError={() => {
+                setPreview(null);
+                onChange("");
+                setError("Fotoğraf görüntülenemedi. Lütfen tekrar yükleyin.");
+              }}
+            />
           ) : (
             <div className="flex size-full items-center justify-center text-muted-foreground">
               <Camera className="size-8" />

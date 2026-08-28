@@ -136,7 +136,9 @@ export default async function DashboardPage({
 
   const supabase = await createClient();
 
-  let query = supabase.from("cleaners").select("*, profiles(*)");
+  let query = supabase
+    .from("cleaners")
+    .select("*, profiles!cleaners_profile_id_fkey(*)");
 
   if (city && city !== "all") {
     query = query.eq("city", city);

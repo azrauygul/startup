@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { MapPin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatTRY } from "@/lib/format";
@@ -10,8 +13,10 @@ type Props = {
 };
 
 export function CleanerCard({ cleaner, bookingType }: Props) {
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const name = cleaner.profiles?.full_name ?? "Temizlik Personeli";
   const avatar = cleaner.profiles?.avatar_url;
+  const showAvatar = Boolean(avatar) && !avatarFailed;
   const rate =
     bookingType === "daily" ? cleaner.daily_rate : cleaner.monthly_rate;
   const rateLabel = bookingType === "daily" ? "/ gün" : "/ ay";
@@ -30,16 +35,17 @@ export function CleanerCard({ cleaner, bookingType }: Props) {
   return (
     <Link
       href={`/cleaners/${cleaner.id}?type=${bookingType}`}
-      className="group block rounded-3xl border border-border/70 bg-card p-4 transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_40px_-24px_rgba(20,80,90,0.45)]"
+      className="group block rounded-3xl border border-border/70 bg-card p-4 transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_40px_-24px_oklch(0.725_0.137_215/0.45)]"
     >
       <div className="flex gap-4">
         <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,var(--brand-soft),var(--muted))]">
-          {avatar ? (
+          {showAvatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={avatar}
+              src={avatar!}
               alt={name}
               className="size-full object-cover transition duration-300 group-hover:scale-105"
+              onError={() => setAvatarFailed(true)}
             />
           ) : (
             <div className="flex size-full items-center justify-center text-lg font-semibold text-primary">

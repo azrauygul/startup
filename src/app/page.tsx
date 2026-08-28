@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { BrandLogo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { SetupBanner } from "@/components/setup-banner";
 import { createClient } from "@/lib/supabase/server";
@@ -23,17 +23,10 @@ export default async function HomePage() {
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,var(--background)_70%),radial-gradient(ellipse_at_top,oklch(0.9_0.05_195),transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,var(--background)_70%),radial-gradient(ellipse_at_top,oklch(0.725_0.137_215/0.18),transparent_55%)]" />
 
       <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-6 sm:px-6">
-        <div className="flex items-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <Sparkles className="size-4" />
-          </span>
-          <span className="font-heading text-xl font-semibold tracking-tight">
-            mismis
-          </span>
-        </div>
+        <BrandLogo size="sm" />
         <div className="flex gap-2">
           <Button render={<Link href="/login" />} variant="ghost" className="rounded-full">
             Giriş

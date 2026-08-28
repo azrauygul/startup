@@ -69,6 +69,10 @@ export function CleanerSetupForm({
   const districts = useMemo(() => getDistrictsForCity(city), [city]);
 
   useEffect(() => {
+    setAvatar(avatarUrl ?? "");
+  }, [avatarUrl]);
+
+  useEffect(() => {
     setServiceAreas((prev) => prev.filter((d) => districts.includes(d)));
   }, [districts]);
 
@@ -91,7 +95,7 @@ export function CleanerSetupForm({
         serviceAreas,
         specialRequests: String(formData.get("special_requests") ?? ""),
         city,
-        avatarUrl: avatar || undefined,
+        avatarUrl: avatar.trim() || undefined,
       });
       setMessage(result.error ?? result.success ?? null);
     });

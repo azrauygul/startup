@@ -18,6 +18,32 @@ import type { BookingStatus, BookingType, UserRole } from "@/lib/types";
 
 export type ActionResult = { error?: string; success?: string; url?: string };
 
+function isUploadFile(value: FormDataEntryValue | null): value is File {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "arrayBuffer" in value &&
+    typeof value.arrayBuffer === "function"
+  );
+}
+
+async function saveProfileAvatar(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  avatarUrl: string,
+): Promise<ActionResult> {
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", userId);
+
+  if (profileError) return { error: profileError.message };
+
+  revalidatePath("/panel");
+  revalidatePath("/dashboard");
+  return { success: "Fotoğraf yüklendi.", url: avatarUrl };
+}
+
 function requireSupabase(): ActionResult | null {
   if (!isSupabaseConfigured()) {
     return { error: SUPABASE_SETUP_MESSAGE };
@@ -127,11 +153,16 @@ export async function uploadAvatar(formData: FormData): Promise<ActionResult> {
   const setup = requireSupabase();
   if (setup) return setup;
 
-  const file = formData.get("avatar");
-  if (!(file instanceof Blob) || file.size === 0) {
+  const fileEntry = formData.get("avatar");
+  if (!isUploadFile(fileEntry)) {
     return { error: "Geçerli bir fotoğraf seçin." };
   }
-  if (file.size > 2 * 1024 * 1024) {
+
+  const buffer = Buffer.from(await fileEntry.arrayBuffer());
+  if (buffer.length === 0) {
+    return { error: "Geçerli bir fotoğraf seçin." };
+  }
+  if (buffer.length > 2 * 1024 * 1024) {
     return { error: "Kırpılmış fotoğraf 2 MB'dan küçük olmalı." };
   }
 
@@ -142,36 +173,15 @@ export async function uploadAvatar(formData: FormData): Promise<ActionResult> {
   if (!user) return { error: "Giriş yapmalısınız." };
 
   const path = `${user.id}/avatar-${Date.now()}.jpg`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const dataUrl = `data:image/jpeg;base64,${buffer.toString("base64")}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
-    .upload(path, buffer, {
-      contentType: "image/jpeg",
-      upsert: true,
-    });
+  // Storage'a yedek kopyala (bucket public olmasa bile profil fotoğrafı data URL ile görünür)
+  await supabase.storage.from("avatars").upload(path, buffer, {
+    contentType: "image/jpeg",
+    upsert: false,
+  });
 
-  if (uploadError) {
-    return {
-      error:
-        "Fotoğraf yüklenemedi. Supabase Storage'da 'avatars' bucket'ını oluşturduğunuzdan emin olun.",
-    };
-  }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("avatars").getPublicUrl(path);
-
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ avatar_url: publicUrl })
-    .eq("id", user.id);
-
-  if (profileError) return { error: profileError.message };
-
-  revalidatePath("/panel");
-  revalidatePath("/dashboard");
-  return { success: "Fotoğraf yüklendi.", url: publicUrl };
+  return saveProfileAvatar(supabase, user.id, dataUrl);
 }
 
 export async function createBooking(input: {

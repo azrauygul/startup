@@ -56,7 +56,7 @@ export default async function CleanerDetailPage({
 
   const { data: cleaner } = await supabase
     .from("cleaners")
-    .select("*, profiles(*)")
+    .select("*, profiles!cleaners_profile_id_fkey(*)")
     .eq("id", id)
     .maybeSingle();
 
