@@ -3,13 +3,13 @@ import { CleanerCard } from "@/components/cleaners/cleaner-card";
 import { CleanerFilters } from "@/components/cleaners/cleaner-filters";
 import { ExploreHero } from "@/components/dashboard/explore-hero";
 import { SetupBanner } from "@/components/setup-banner";
-import { TURKEY_CITIES } from "@/lib/constants";
 import { getDemoCleaners } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import type { Cleaner } from "@/lib/types";
+import type { BookingType, Cleaner } from "@/lib/types";
 
 type SearchParams = Promise<{
+  type?: string;
   service?: string;
   sort?: string;
   q?: string;
@@ -87,12 +87,21 @@ function filterCleaners(
   return result;
 }
 
+function serviceOptions(cleaners: Cleaner[]) {
+  return Array.from(
+    new Set(cleaners.flatMap((c) => c.services_offered ?? [])),
+  ).sort((a, b) => a.localeCompare(b, "tr"));
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
+  const bookingType = (
+    params.type === "monthly" ? "monthly" : "daily"
+  ) as BookingType;
   const service = params.service;
   const city = params.city;
   const sort = params.sort ?? "rating";
@@ -118,11 +127,15 @@ export default async function DashboardPage({
           <SetupBanner show />
         </div>
         <Suspense fallback={null}>
-          <CleanerFilters cities={[...TURKEY_CITIES]} />
+          <CleanerFilters services={serviceOptions(demo)} />
         </Suspense>
         <div className="grid gap-4 sm:grid-cols-2">
           {demo.map((cleaner) => (
-            <CleanerCard key={cleaner.id} cleaner={cleaner} />
+            <CleanerCard
+              key={cleaner.id}
+              cleaner={cleaner}
+              bookingType={bookingType}
+            />
           ))}
         </div>
       </div>
@@ -167,18 +180,10 @@ export default async function DashboardPage({
     sort,
   });
 
-  const cities = Array.from(
-    new Set([
-      ...cleaners.map((c) => c.city),
-      ...getDemoCleaners().map((c) => c.city),
-    ]),
-  ).sort((a, b) => {
-    const priority = ["İstanbul", "Ankara", "İzmir"];
-    const ai = priority.indexOf(a);
-    const bi = priority.indexOf(b);
-    if (ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-    return a.localeCompare(b, "tr");
-  });
+  const services = serviceOptions([
+    ...cleaners,
+    ...getDemoCleaners(),
+  ]);
 
   return (
     <div className="animate-fade-up space-y-8">
@@ -195,7 +200,7 @@ export default async function DashboardPage({
       </div>
 
       <Suspense fallback={null}>
-        <CleanerFilters cities={cities} />
+        <CleanerFilters services={services} />
       </Suspense>
 
       {error ? (
@@ -216,7 +221,7 @@ export default async function DashboardPage({
                 className="animate-fade-up"
                 style={{ animationDelay: `${i * 40}ms` }}
               >
-                <CleanerCard cleaner={cleaner} />
+                <CleanerCard cleaner={cleaner} bookingType={bookingType} />
               </div>
             ))}
           </div>
@@ -236,7 +241,7 @@ export default async function DashboardPage({
               className="animate-fade-up"
               style={{ animationDelay: `${i * 40}ms` }}
             >
-              <CleanerCard cleaner={cleaner} />
+              <CleanerCard cleaner={cleaner} bookingType={bookingType} />
             </div>
           ))}
         </div>

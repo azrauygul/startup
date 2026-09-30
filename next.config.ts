@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root,
   },
+  // Browser checks often use 127.0.0.1 while `next dev` allows localhost only.
+  allowedDevOrigins: ["127.0.0.1"],
 };
 
 export default nextConfig;
