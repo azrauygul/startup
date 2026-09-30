@@ -1,49 +1,70 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { format } from "date-fns";
 import { Clock, MapPin, MessageSquareWarning, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { BookingRequestDialog } from "@/components/cleaners/booking-request-dialog";
+import { CleanerTrustStats } from "@/components/cleaners/cleaner-trust-stats";
 import { SetupBanner } from "@/components/setup-banner";
 import {
   getDemoCleanerBundle,
   isDemoCleanerId,
 } from "@/lib/demo-data";
+import { getCurrentProfile } from "@/lib/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { formatTime, formatTRY } from "@/lib/format";
+import { groupSlotsByDate } from "@/lib/availability-slots";
+import { formatWindowDay, getWindowDates, normalizeAvailabilitySlots } from "@/lib/availability-window";
+import type { BookedSlot } from "@/lib/availability-slots";
 import {
-  DAY_LABELS,
-  type BookingType,
   type Cleaner,
   type CleanerAvailability,
   type Review,
 } from "@/lib/types";
 
 type Params = Promise<{ id: string }>;
-type SearchParams = Promise<{ type?: string }>;
+
+async function getBookedSlots(
+  cleanerId: string,
+): Promise<BookedSlot[]> {
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("bookings")
+    .select("start_date, start_time")
+    .eq("cleaner_id", cleanerId)
+    .in("status", ["confirmed", "pending"])
+    .gte("start_date", today);
+
+  return (data ?? [])
+    .filter((b) => b.start_time)
+    .map((b) => ({
+      date: b.start_date as string,
+      time: String(b.start_time).slice(0, 5),
+    }));
+}
 
 export default async function CleanerDetailPage({
   params,
-  searchParams,
 }: {
   params: Params;
-  searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const sp = await searchParams;
-  const bookingType = (sp.type === "monthly" ? "monthly" : "daily") as BookingType;
 
   if (isDemoCleanerId(id)) {
     const demo = getDemoCleanerBundle(id);
     if (!demo) notFound();
+    const profile = isSupabaseConfigured() ? await getCurrentProfile() : null;
     return (
       <CleanerDetailView
         cleaner={demo.cleaner}
         slots={demo.availability}
         reviews={demo.reviews}
-        bookingType={bookingType}
+        bookedSlots={[]}
         isDemo
+        isAuthenticated={Boolean(profile)}
       />
     );
   }
@@ -53,10 +74,11 @@ export default async function CleanerDetailPage({
   }
 
   const supabase = await createClient();
+  const profile = await getCurrentProfile();
 
   const { data: cleaner } = await supabase
     .from("cleaners")
-    .select("*, profiles(*)")
+    .select("*, profiles!cleaners_profile_id_fkey(*)")
     .eq("id", id)
     .maybeSingle();
 
@@ -67,29 +89,35 @@ export default async function CleanerDetailPage({
     services_offered: (cleaner as Cleaner).services_offered ?? [],
     service_areas: (cleaner as Cleaner).service_areas ?? [],
     special_requests: (cleaner as Cleaner).special_requests ?? "",
+    completed_jobs_count: (cleaner as Cleaner).completed_jobs_count ?? 0,
   };
 
-  const [{ data: availability }, { data: reviews }] = await Promise.all([
-    supabase
-      .from("cleaner_availability")
-      .select("*")
-      .eq("cleaner_id", id)
-      .order("day_of_week")
-      .order("start_time"),
-    supabase
-      .from("reviews")
-      .select("*, profiles(*)")
-      .eq("cleaner_id", id)
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: availability }, { data: reviews }, bookedSlots] =
+    await Promise.all([
+      supabase
+        .from("cleaner_availability")
+        .select("*")
+        .eq("cleaner_id", id)
+        .order("available_date")
+        .order("start_time"),
+      supabase
+        .from("reviews")
+        .select("*, profiles(*)")
+        .eq("cleaner_id", id)
+        .order("created_at", { ascending: false }),
+      getBookedSlots(id),
+    ]);
 
   return (
     <CleanerDetailView
       cleaner={typed}
-      slots={(availability ?? []) as CleanerAvailability[]}
+      slots={normalizeAvailabilitySlots(
+        (availability ?? []) as CleanerAvailability[],
+      )}
       reviews={(reviews ?? []) as Review[]}
-      bookingType={bookingType}
+      bookedSlots={bookedSlots}
       isDemo={false}
+      isAuthenticated={Boolean(profile)}
     />
   );
 }
@@ -98,14 +126,16 @@ function CleanerDetailView({
   cleaner,
   slots,
   reviews,
-  bookingType,
+  bookedSlots,
   isDemo,
+  isAuthenticated = false,
 }: {
   cleaner: Cleaner;
   slots: CleanerAvailability[];
   reviews: Review[];
-  bookingType: BookingType;
+  bookedSlots: BookedSlot[];
   isDemo: boolean;
+  isAuthenticated?: boolean;
 }) {
   const name = cleaner.profiles?.full_name ?? "Temizlik Personeli";
   const avatar = cleaner.profiles?.avatar_url;
@@ -150,10 +180,6 @@ function CleanerDetailView({
                     <MapPin className="size-3.5" />
                     {cleaner.city}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-amber-600">
-                    <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                    {Number(cleaner.rating).toFixed(1)} ({cleaner.review_count})
-                  </span>
                 </p>
               </div>
             </div>
@@ -161,20 +187,18 @@ function CleanerDetailView({
             <div className="flex flex-col gap-2 sm:items-end">
               <div className="text-sm text-muted-foreground">
                 Günlük{" "}
-                <span className="font-semibold text-foreground">
+                <span className="text-lg font-semibold text-foreground">
                   {formatTRY(Number(cleaner.daily_rate))}
                 </span>
-                <span className="mx-2">·</span>
-                Aylık{" "}
-                <span className="font-semibold text-foreground">
-                  {formatTRY(Number(cleaner.monthly_rate))}
-                </span>
+                <span className="text-muted-foreground"> / gün</span>
               </div>
               <Suspense fallback={null}>
                 <BookingRequestDialog
                   cleaner={cleaner}
-                  defaultType={bookingType}
+                  availability={slots}
+                  bookedSlots={bookedSlots}
                   isDemo={isDemo}
+                  isAuthenticated={isAuthenticated}
                 />
               </Suspense>
             </div>
@@ -183,6 +207,8 @@ function CleanerDetailView({
           <p className="max-w-3xl leading-relaxed text-muted-foreground">
             {cleaner.bio}
           </p>
+
+          <CleanerTrustStats cleaner={cleaner} />
 
           <div>
             <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -228,7 +254,7 @@ function CleanerDetailView({
         <section className="space-y-4 rounded-3xl border bg-card p-6">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Clock className="size-4 text-primary" />
-            Müsait gün ve saatler
+            Önümüzdeki 14 gün — müsaitlik
           </h2>
           {slots.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -236,19 +262,28 @@ function CleanerDetailView({
             </p>
           ) : (
             <ul className="space-y-2">
-              {slots.map((slot) => (
-                <li
-                  key={slot.id}
-                  className="flex items-center justify-between rounded-2xl bg-muted/50 px-4 py-3 text-sm"
-                >
-                  <span className="font-medium">
-                    {DAY_LABELS[slot.day_of_week]}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
-                  </span>
-                </li>
-              ))}
+              {getWindowDates().map((date) => {
+                const dateStr = format(date, "yyyy-MM-dd");
+                const daySlots = groupSlotsByDate(slots).get(dateStr);
+                if (!daySlots?.length) return null;
+                const meta = formatWindowDay(date);
+                return (
+                  <li
+                    key={dateStr}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-muted/50 px-4 py-3 text-sm"
+                  >
+                    <span className="font-medium">{meta.label}</span>
+                    <span className="text-muted-foreground">
+                      {daySlots
+                        .map(
+                          (s) =>
+                            `${formatTime(s.start_time)} – ${formatTime(s.end_time)}`,
+                        )
+                        .join(", ")}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

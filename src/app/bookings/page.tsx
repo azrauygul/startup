@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { MessageCircle, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,11 @@ import { BookingStatusActions } from "@/components/bookings/booking-status-actio
 import { SetupBanner } from "@/components/setup-banner";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { fetchActiveBookingsForProfile } from "@/lib/fetch-bookings";
+import { getHomeSizeLabel, getBookingFrequencyLabel } from "@/lib/constants";
 import { getCurrentProfile } from "@/lib/helpers";
-import { telLink, whatsappLink } from "@/lib/format";
-import { STATUS_LABELS, type Booking, type Cleaner, type Review } from "@/lib/types";
+import { telLink, whatsappLink, formatTime } from "@/lib/format";
+import { STATUS_LABELS, type Review } from "@/lib/types";
 
 export default async function BookingsPage() {
   if (!isSupabaseConfigured()) {
@@ -24,35 +27,15 @@ export default async function BookingsPage() {
   }
 
   const profile = await getCurrentProfile();
-  const supabase = await createClient();
-  const isCleaner = profile?.role === "cleaner";
-
-  let list: Booking[] = [];
-
-  if (isCleaner && profile) {
-    const { data: cleaner } = await supabase
-      .from("cleaners")
-      .select("id")
-      .eq("profile_id", profile.id)
-      .maybeSingle();
-
-    if (cleaner) {
-      const { data: bookings } = await supabase
-        .from("bookings")
-        .select("*, cleaners(*, profiles(*)), profiles(*)")
-        .eq("cleaner_id", (cleaner as Cleaner).id)
-        .order("created_at", { ascending: false });
-      list = (bookings ?? []) as Booking[];
-    }
-  } else if (profile) {
-    const { data: bookings } = await supabase
-      .from("bookings")
-      .select("*, cleaners(*, profiles(*)), profiles(*)")
-      .eq("customer_id", profile.id)
-      .order("created_at", { ascending: false });
-    list = (bookings ?? []) as Booking[];
+  if (!profile) {
+    redirect("/login?next=/bookings");
   }
 
+  const isCleaner = profile.role === "cleaner";
+  const { bookings: list, error, needsCleanerProfile } =
+    await fetchActiveBookingsForProfile(profile);
+
+  const supabase = await createClient();
   const bookingIds = list.map((b) => b.id);
   const { data: reviews } = bookingIds.length
     ? await supabase.from("reviews").select("*").in("booking_id", bookingIds)
@@ -70,29 +53,52 @@ export default async function BookingsPage() {
         </h1>
         <p className="text-muted-foreground">
           {isCleaner
-            ? "Gelen talepleri görün, onaylayın veya reddedin."
-            : "Taleplerinizi takip edin, onay sonrası iletişime geçin."}
+            ? "Size gelen rezervasyonları görün, tamamlandı olarak işaretleyin veya müşteriyle iletişime geçin."
+            : "Oluşturduğunuz rezervasyonları görün ve personelle iletişime geçin."}
         </p>
+        {!isCleaner ? (
+          <Button
+            render={<Link href="/history" />}
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+          >
+            Geçmiş temizlikler
+          </Button>
+        ) : null}
       </div>
 
-      {list.length === 0 ? (
+      {error ? (
+        <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 text-sm">
+          Randevular yüklenemedi: {error}
+        </div>
+      ) : null}
+
+      {needsCleanerProfile ? (
+        <div className="rounded-3xl border border-dashed bg-card/60 p-10 text-center">
+          <p className="font-medium">Profil kartınız henüz yok.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Rezervasyon alabilmek için önce operasyon panelinden profilinizi
+            oluşturun.
+          </p>
+          <Button render={<Link href="/panel" />} className="mt-4 rounded-full">
+            Operasyon paneline git
+          </Button>
+        </div>
+      ) : list.length === 0 ? (
         <div className="rounded-3xl border border-dashed bg-card/60 p-10 text-center">
           <p className="font-medium">Henüz randevu yok.</p>
-          {!isCleaner ? (
-            <Button
-              render={<Link href="/dashboard" />}
-              className="mt-4 rounded-full"
-            >
-              Temizlikçileri gör
-            </Button>
-          ) : (
-            <Button
-              render={<Link href="/panel" />}
-              className="mt-4 rounded-full"
-            >
-              Profilini tamamla
-            </Button>
-          )}
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isCleaner
+              ? "Müsaitlik takviminizi doldurduğunuzda müşteri rezervasyonları burada görünür."
+              : "Keşfet sayfasından personel seçip randevu oluşturabilirsiniz."}
+          </p>
+          <Button
+            render={<Link href={isCleaner ? "/panel" : "/dashboard"} />}
+            className="mt-4 rounded-full"
+          >
+            {isCleaner ? "Müsaitlik ekle" : "Personelleri keşfet"}
+          </Button>
         </div>
       ) : (
         <ul className="space-y-4">
@@ -107,8 +113,8 @@ export default async function BookingsPage() {
             const wa = whatsappLink(
               contactPhone,
               isCleaner
-                ? `Merhaba ${customerName}, Temizly talebiniz hakkında yazıyorum.`
-                : `Merhaba ${cleanerName}, Temizly üzerinden oluşturduğum kiralama talebi hakkında yazıyorum.`,
+                ? `Merhaba ${customerName}, ${booking.start_date}${booking.start_time ? ` ${formatTime(booking.start_time)}` : ""} randevumuz hakkında yazıyorum.`
+                : `Merhaba ${cleanerName}, ${booking.start_date}${booking.start_time ? ` ${formatTime(booking.start_time)}` : ""} randevumuz hakkında yazıyorum.`,
             );
             const phone = telLink(contactPhone);
             const existingReview = reviewByBooking.get(booking.id);
@@ -120,6 +126,9 @@ export default async function BookingsPage() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {isCleaner ? "Müşteri" : "Personel"}
+                    </p>
                     {isCleaner ? (
                       <p className="text-lg font-semibold">{displayName}</p>
                     ) : (
@@ -131,10 +140,19 @@ export default async function BookingsPage() {
                       </Link>
                     )}
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {booking.booking_type === "daily" ? "Günlük" : "Aylık"} ·{" "}
                       {booking.start_date}
-                      {booking.end_date ? ` → ${booking.end_date}` : ""}
+                      {booking.start_time
+                        ? ` · ${formatTime(booking.start_time)}`
+                        : ""}
                     </p>
+                    {booking.home_size ? (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Ev: {getHomeSizeLabel(booking.home_size)}
+                        {booking.frequency && booking.frequency !== "once"
+                          ? ` · ${getBookingFrequencyLabel(booking.frequency)}`
+                          : ""}
+                      </p>
+                    ) : null}
                   </div>
                   <Badge
                     variant={
@@ -151,10 +169,29 @@ export default async function BookingsPage() {
                 </div>
 
                 {booking.notes ? (
-                  <p className="text-sm text-muted-foreground">{booking.notes}</p>
+                  <p className="rounded-2xl bg-muted/40 px-4 py-3 text-sm">
+                    {booking.notes}
+                  </p>
                 ) : null}
 
                 <div className="flex flex-wrap gap-2">
+                  {isCleaner && booking.status === "confirmed" ? (
+                    <BookingStatusActions
+                      bookingId={booking.id}
+                      actions={[
+                        {
+                          label: "Tamamlandı işaretle",
+                          status: "completed",
+                        },
+                        {
+                          label: "İptal",
+                          status: "cancelled",
+                          variant: "outline",
+                        },
+                      ]}
+                    />
+                  ) : null}
+
                   {isCleaner && booking.status === "pending" ? (
                     <BookingStatusActions
                       bookingId={booking.id}
@@ -169,16 +206,12 @@ export default async function BookingsPage() {
                     />
                   ) : null}
 
-                  {isCleaner && booking.status === "confirmed" ? (
+                  {!isCleaner && booking.status === "confirmed" ? (
                     <BookingStatusActions
                       bookingId={booking.id}
                       actions={[
                         {
-                          label: "Tamamlandı işaretle",
-                          status: "completed",
-                        },
-                        {
-                          label: "İptal",
+                          label: "İptal et",
                           status: "cancelled",
                           variant: "outline",
                         },
@@ -199,9 +232,7 @@ export default async function BookingsPage() {
                     />
                   ) : null}
 
-                  {(booking.status === "confirmed" ||
-                    booking.status === "completed") &&
-                  (wa || phone) ? (
+                  {booking.status === "confirmed" && (wa || phone) ? (
                     <>
                       {wa ? (
                         <Button

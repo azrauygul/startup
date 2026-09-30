@@ -2,19 +2,28 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn } from "@/lib/actions";
 
 export function LoginForm() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const registerHref = next
+    ? `/register?next=${encodeURIComponent(next)}`
+    : "/register";
 
   return (
     <form
       className="space-y-4"
       action={(formData) => {
+        if (next) formData.set("next", next);
+
         startTransition(async () => {
           const result = await signIn(formData);
           if (result?.error) setError(result.error);
@@ -49,7 +58,7 @@ export function LoginForm() {
       </Button>
       <p className="text-center text-sm text-muted-foreground">
         Hesabın yok mu?{" "}
-        <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link href={registerHref} className="font-medium text-primary underline-offset-4 hover:underline">
           Kayıt ol
         </Link>
       </p>

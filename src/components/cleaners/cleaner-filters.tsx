@@ -12,29 +12,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CLEANING_TYPES, TURKEY_CITIES } from "@/lib/constants";
 import type { BookingType } from "@/lib/types";
 
 type Props = {
-  cities: string[];
+  services: string[];
 };
 
-export function CleanerFilters({ cities }: Props) {
+export function CleanerFilters({ services }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
 
   const type = (searchParams.get("type") as BookingType) || "daily";
-  const city = searchParams.get("city") || "all";
   const service = searchParams.get("service") || "all";
   const sort = searchParams.get("sort") || "rating";
   const qParam = searchParams.get("q") || "";
   const [q, setQ] = useState(qParam);
-
-  const cityOptions =
-    cities.length > 0
-      ? [...new Set([...TURKEY_CITIES.filter((c) => cities.includes(c)), ...cities])]
-      : [...TURKEY_CITIES];
 
   const update = useCallback(
     (key: string, value: string) => {
@@ -77,35 +70,16 @@ export function CleanerFilters({ cities }: Props) {
         </TabsList>
       </Tabs>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="relative sm:col-span-2 lg:col-span-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
-            placeholder="İsim veya ilçe ara..."
+            placeholder="İsim veya semt ara..."
             className="rounded-full pl-9"
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-
-        <Select
-          value={city}
-          onValueChange={(v) =>
-            update("city", v == null ? "all" : String(v))
-          }
-        >
-          <SelectTrigger className="w-full rounded-full">
-            <SelectValue placeholder="Şehir" />
-          </SelectTrigger>
-          <SelectContent className="max-h-72">
-            <SelectItem value="all">Tüm Türkiye</SelectItem>
-            {cityOptions.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
         <Select
           value={service}
@@ -114,11 +88,11 @@ export function CleanerFilters({ cities }: Props) {
           }
         >
           <SelectTrigger className="w-full rounded-full">
-            <SelectValue placeholder="Temizlik türü" />
+            <SelectValue placeholder="Hizmet" />
           </SelectTrigger>
-          <SelectContent className="max-h-72">
-            <SelectItem value="all">Tüm temizlik türleri</SelectItem>
-            {CLEANING_TYPES.map((s) => (
+          <SelectContent>
+            <SelectItem value="all">Tüm hizmetler</SelectItem>
+            {services.map((s) => (
               <SelectItem key={s} value={s}>
                 {s}
               </SelectItem>

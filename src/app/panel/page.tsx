@@ -8,13 +8,15 @@ import { SetupBanner } from "@/components/setup-banner";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentProfile } from "@/lib/helpers";
-import { telLink, whatsappLink } from "@/lib/format";
+import { telLink, whatsappLink, formatTime } from "@/lib/format";
+import { getBookingFrequencyLabel } from "@/lib/constants";
 import {
   STATUS_LABELS,
   type Booking,
   type Cleaner,
   type CleanerAvailability,
 } from "@/lib/types";
+import { fetchActiveBookingsForProfile } from "@/lib/fetch-bookings";
 
 export default async function PanelPage() {
   if (!isSupabaseConfigured()) {
@@ -37,8 +39,8 @@ export default async function PanelPage() {
         <p className="mt-2 text-muted-foreground">
           Bu alan yalnızca temizlik personeli hesapları içindir.
         </p>
-        <Button render={<Link href="/home" />} className="mt-4 rounded-full">
-          Home’a dön
+        <Button render={<Link href="/dashboard" />} className="mt-4 rounded-full">
+          Keşfet’e dön
         </Button>
       </div>
     );
@@ -59,18 +61,11 @@ export default async function PanelPage() {
         .from("cleaner_availability")
         .select("*")
         .eq("cleaner_id", typedCleaner.id)
-        .order("day_of_week")
+        .order("available_date")
+        .order("start_time")
     : { data: [] };
 
-  const { data: bookings } = typedCleaner
-    ? await supabase
-        .from("bookings")
-        .select("*, profiles(*)")
-        .eq("cleaner_id", typedCleaner.id)
-        .order("created_at", { ascending: false })
-    : { data: [] };
-
-  const list = (bookings ?? []) as Booking[];
+  const { bookings: list } = await fetchActiveBookingsForProfile(profile);
 
   return (
     <div className="animate-fade-up space-y-10">
@@ -79,8 +74,9 @@ export default async function PanelPage() {
           Operasyon paneli
         </h1>
         <p className="text-muted-foreground">
-          Profil ve müsaitlik yönetin, gelen talepleri onaylayın, müşteriyle
-          iletişime geçin.
+          {typedCleaner
+            ? "Profil ve müsaitlik yönetin, randevularınızı takip edin, müşteriyle iletişime geçin."
+            : "Hesabın hazır. Aşağıdaki formdan profil kartını oluştur; kayıt olduktan sonra Keşfet’te görünmesi için bu adım gerekli."}
         </p>
       </div>
 
@@ -97,17 +93,29 @@ export default async function PanelPage() {
         }
         availability={(availability ?? []) as CleanerAvailability[]}
         avatarUrl={profile.avatar_url}
+        hasProfile={Boolean(typedCleaner)}
       />
 
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Gelen talepler</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Son randevular</h2>
+          <Button
+            render={<Link href="/bookings" />}
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+          >
+            Tüm randevular
+          </Button>
+        </div>
         {!typedCleaner ? (
           <p className="text-sm text-muted-foreground">
-            Önce profilinizi kaydedin; ardından talepler burada görünür.
+            Önce profilinizi kaydedin; ardından randevular burada görünür.
           </p>
         ) : list.length === 0 ? (
           <div className="rounded-3xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Henüz talep yok.
+            Henüz randevu yok. Müsait gün ve saatlerinizi ekleyerek müşterilerin
+            doğrudan randevu almasını sağlayın.
           </div>
         ) : (
           <ul className="space-y-4">
@@ -116,7 +124,7 @@ export default async function PanelPage() {
               const customerPhone = booking.profiles?.phone;
               const wa = whatsappLink(
                 customerPhone,
-                `Merhaba ${customerName}, Temizly kiralama talebiniz hakkında yazıyorum.`,
+                `Merhaba ${customerName}, ${booking.start_date}${booking.start_time ? ` ${formatTime(booking.start_time)}` : ""} randevumuz hakkında yazıyorum.`,
               );
               const phone = telLink(customerPhone);
 
@@ -129,12 +137,18 @@ export default async function PanelPage() {
                     <div>
                       <p className="text-lg font-semibold">{customerName}</p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {booking.booking_type === "daily" ? "Günlük" : "Aylık"} ·{" "}
                         {booking.start_date}
-                        {booking.end_date ? ` → ${booking.end_date}` : ""}
+                        {booking.start_time
+                          ? ` · ${formatTime(booking.start_time)}`
+                          : ""}
                       </p>
                       {booking.notes ? (
                         <p className="mt-2 text-sm">{booking.notes}</p>
+                      ) : null}
+                      {booking.frequency && booking.frequency !== "once" ? (
+                        <p className="mt-1 text-xs font-medium text-primary">
+                          {getBookingFrequencyLabel(booking.frequency)}
+                        </p>
                       ) : null}
                     </div>
                     <Badge className="rounded-full">
@@ -143,20 +157,6 @@ export default async function PanelPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {booking.status === "pending" ? (
-                      <BookingStatusActions
-                        bookingId={booking.id}
-                        actions={[
-                          { label: "Onayla", status: "confirmed" },
-                          {
-                            label: "Reddet",
-                            status: "cancelled",
-                            variant: "outline",
-                          },
-                        ]}
-                      />
-                    ) : null}
-
                     {booking.status === "confirmed" ? (
                       <BookingStatusActions
                         bookingId={booking.id}
@@ -174,9 +174,21 @@ export default async function PanelPage() {
                       />
                     ) : null}
 
-                    {(booking.status === "confirmed" ||
-                      booking.status === "completed") &&
-                    (wa || phone) ? (
+                    {booking.status === "pending" ? (
+                      <BookingStatusActions
+                        bookingId={booking.id}
+                        actions={[
+                          { label: "Onayla", status: "confirmed" },
+                          {
+                            label: "Reddet",
+                            status: "cancelled",
+                            variant: "outline",
+                          },
+                        ]}
+                      />
+                    ) : null}
+
+                    {booking.status === "confirmed" && (wa || phone) ? (
                       <>
                         {wa ? (
                           <Button

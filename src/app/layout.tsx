@@ -16,7 +16,7 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "mismis — Güvenilir temizlik personeli",
   description:
-    "Günlük veya aylık temizlik personeli kiralayın. Talep oluşturun, personel onaylasın.",
+    "Temizlik personeli bulun, müsait gün ve saatten randevu alın.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

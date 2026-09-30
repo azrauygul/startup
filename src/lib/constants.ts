@@ -118,3 +118,106 @@ export function isTurkeyCity(value: string): value is TurkeyCity {
 export function isCleaningType(value: string): value is CleaningType {
   return (CLEANING_TYPES as readonly string[]).includes(value);
 }
+
+export const HOME_SIZES = [
+  {
+    id: "studio",
+    label: "Stüdyo / 1+0",
+    description: "Tek oda veya küçük alan",
+    hint: "~40 m²",
+  },
+  {
+    id: "1+1",
+    label: "1+1",
+    description: "1 yatak odası + salon",
+    hint: "~60 m²",
+  },
+  {
+    id: "2+1",
+    label: "2+1",
+    description: "2 yatak odası + salon",
+    hint: "~90 m²",
+  },
+  {
+    id: "3+1",
+    label: "3+1",
+    description: "3 yatak odası + salon",
+    hint: "~120 m²",
+  },
+  {
+    id: "4+1",
+    label: "4+1 ve üzeri",
+    description: "Geniş daire veya dubleks",
+    hint: "120+ m²",
+  },
+  {
+    id: "villa",
+    label: "Villa / Müstakil",
+    description: "Bahçeli veya çok katlı ev",
+    hint: "200+ m²",
+  },
+] as const;
+
+export type HomeSizeId = (typeof HOME_SIZES)[number]["id"];
+
+export function isHomeSizeId(value: string): value is HomeSizeId {
+  return HOME_SIZES.some((s) => s.id === value);
+}
+
+export function getHomeSizeLabel(id: string | null | undefined) {
+  if (!id) return "Belirtilmedi";
+  return HOME_SIZES.find((s) => s.id === id)?.label ?? id;
+}
+
+export const AVAILABILITY_WINDOW_DAYS = 14;
+
+export const TRUST_FEATURES = [
+  "Puanlı profiller",
+  "Tamamlanan iş sayısı",
+  "Müsait gün ve saatten randevu",
+  "Tekrarlayan temizlikte tasarruf",
+] as const;
+
+export const BOOKING_FREQUENCIES = [
+  {
+    id: "once",
+    label: "Tek seferlik",
+    discount: 0,
+    hint: null,
+  },
+  {
+    id: "biweekly",
+    label: "2 haftada bir",
+    discount: 10,
+    hint: "%10 tasarruf · En popüler",
+  },
+  {
+    id: "every_4_weeks",
+    label: "4 haftada bir",
+    discount: 15,
+    hint: "%15 tasarruf · En avantajlı",
+  },
+] as const;
+
+export type BookingFrequencyId = (typeof BOOKING_FREQUENCIES)[number]["id"];
+
+export function isBookingFrequency(value: string): value is BookingFrequencyId {
+  return BOOKING_FREQUENCIES.some((f) => f.id === value);
+}
+
+export function getBookingFrequencyLabel(id: string | null | undefined) {
+  if (!id) return "Tek seferlik";
+  return BOOKING_FREQUENCIES.find((f) => f.id === id)?.label ?? id;
+}
+
+export function getFrequencyDiscount(id: BookingFrequencyId): number {
+  return BOOKING_FREQUENCIES.find((f) => f.id === id)?.discount ?? 0;
+}
+
+export function applyFrequencyDiscount(
+  amount: number,
+  frequency: BookingFrequencyId,
+): number {
+  const discount = getFrequencyDiscount(frequency);
+  return Math.round(amount * (1 - discount / 100));
+}
