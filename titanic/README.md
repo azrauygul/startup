@@ -4,7 +4,17 @@ Kaggle Titanic train ve test dosyaları için tek komutluk model. Uygulamanın g
 
 `train.csv` 891 yolcu ve `Survived` etiketini içerir. `test.csv` 418 yolcu içerir ve etiket taşımaz. Skor, train üzerinde 5 katmanlı stratified cross-validation ile ölçülür. Çıktı, Kaggle’a yüklenecek `output/submission.csv` dosyasıdır (`PassengerId`, `Survived`).
 
-Kadın yaşar / erkek ölür kuralı train üzerinde yaklaşık %78.7 doğruluk verir. Ünvan, aile büyüklüğü, bilet grubu, güverte ve yaş bandı eklenince çapraz doğrulama genelde %80–83 bandına çıkar. Public leaderboard bu sayının bir iki puan altında kalabilir. Yarışma metriği accuracy olduğu için model seçimi de accuracy ile yapılır.
+Kadın yaşar / erkek ölür kuralı train üzerinde %78.68 doğruluk verir. Ünvan, aile büyüklüğü, bilet grubu, güverte ve yaş bandı eklendikten sonra 5 katmanlı cross-validation soft vote modelini seçer:
+
+| Model | Ortalama doğruluk | Std |
+| --- | ---: | ---: |
+| soft_vote | 84.40% | 2.03% |
+| gradient_boosting | 83.95% | 1.99% |
+| hist_gradient_boosting | 83.72% | 1.28% |
+| random_forest | 83.28% | 1.24% |
+| logistic | 82.38% | 1.31% |
+
+Out-of-fold doğruluk %84.40’tır. Public leaderboard bu sayının bir iki puan altında kalabilir. Yarışma metriği accuracy olduğu için model seçimi de accuracy ile yapılır.
 
 ## Kurulum
 
