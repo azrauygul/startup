@@ -51,12 +51,12 @@ const cleanerSteps = [
 const customerBenefits = [
   { icon: Search, title: "81 ilde arama", text: "Türkiye genelinde personel bulun, şehre göre filtreleyin." },
   { icon: Star, title: "Şeffaf profiller", text: "Puan, tamamlanan temizlik sayısı ve yorumlarla güvenle seçim yapın." },
-  { icon: Wallet, title: "Uygulama içi ödeme yok", text: "Ücreti personelle doğrudan konuşursunuz; aracı komisyon yok." },
-  { icon: MessageCircle, title: "WhatsApp ile devam", text: "Onay sonrası detayları mesajla netleştirin." },
+  { icon: Wallet, title: "Güvenli uygulama içi ödeme", text: "iyzico ile ödersiniz; para iş bitene kadar güvende bekler. Tek seferlik işlerde %6 hizmet bedeli, paketlerde yok." },
+  { icon: MessageCircle, title: "Uygulama içi mesajlaşma", text: "Detayları uygulama içinden netleştirin; numaranız gizli kalır." },
 ];
 
 const cleanerBenefits = [
-  { icon: UserPlus, title: "Ücretsiz kayıt", text: "Tek profil kartı ile kendinizi tanıtın, ekstra ücret yok." },
+  { icon: UserPlus, title: "Ücretsiz kayıt", text: "Kayıt ücretsiz. Yalnızca tamamlanan işlerden %15 (paket müşterilerinde %12) komisyon alınır." },
   { icon: MapPin, title: "Bölgenizi seçin", text: "Hizmet vereceğiniz ili ve ilçeleri siz belirleyin." },
   { icon: CalendarClock, title: "Müsaitliğinizi yönetin", text: "Çalışmak istediğiniz gün ve saatleri kendiniz girin." },
   { icon: BadgeCheck, title: "Randevuları yönetin", text: "Müsait gün ve saatlerinizi belirleyin; müşteriler doğrudan randevu alsın." },

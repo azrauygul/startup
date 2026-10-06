@@ -108,8 +108,8 @@ export function BookingRequestDialog({
         <DialogHeader>
           <DialogTitle>Kiralama talebi</DialogTitle>
           <DialogDescription>
-            Ödeme yok — talep oluşturulur, personel onaylar. Sonrasında WhatsApp
-            ile iletişime geçebilirsiniz.
+            Talep oluşturulur, personel onaylar. Ödeme ve iletişim uygulama
+            üzerinden yapılır.
           </DialogDescription>
         </DialogHeader>
 
@@ -183,7 +183,7 @@ export function BookingRequestDialog({
 
           <div className="rounded-2xl bg-muted/60 px-4 py-3 text-sm">
             Tahmini tutar: <span className="font-semibold">{formatTRY(price)}</span>
-            <span className="text-muted-foreground"> (bilgi amaçlı, ödeme yok)</span>
+            <span className="text-muted-foreground"> (tek seferlik işlerde %6 hizmet bedeli eklenir)</span>
           </div>
 
           {message ? (
