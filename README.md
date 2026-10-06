@@ -1,8 +1,12 @@
-# Temizly
+# mismis
 
-Günlük / aylık temizlik personeli kiralama platformu (MVP).  
-Stack: Next.js App Router, TypeScript, Tailwind, shadcn/ui, Supabase Auth + DB.  
-Ödeme yok: talep → onay → WhatsApp / telefon.
+Güvenilir, sigortalı temizlikçilerle anında randevu.
+
+- **Mobil uygulama (Android + iOS):** [`mobile/`](mobile/README.md) — Expo, müşteri ve temizlikçi arayüzleri, iyzico Pazaryeri ödeme, uygulama içi mesajlaşma.
+- **Web (Temizly MVP):** bu klasördeki Next.js uygulaması. Aynı Supabase veritabanını kullanır.
+- **Veritabanı:** `supabase/schema.sql` + `supabase/mismis/migration.sql`; ödeme için `supabase/functions/iyzico-checkout`.
+
+Stack: Next.js App Router, TypeScript, Tailwind, shadcn/ui, Supabase Auth + DB.
 
 ## Kurulum
 
