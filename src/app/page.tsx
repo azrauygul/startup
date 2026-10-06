@@ -58,8 +58,8 @@ export default async function HomePage() {
             Güvenilir temizlik personeli, günlük veya aylık.
           </h1>
           <p className="max-w-lg text-lg text-muted-foreground">
-            Profili incele, müsaitliği gör, talep oluştur. Ödeme yok —
-            personel onaylar, WhatsApp ile devam edersiniz.
+            Profili incele, boş saati seç, güvenle öde. Randevun anında
+            onaylanır; ödemen iş bitene kadar güvende bekler.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button render={<Link href="/register" />} size="lg" className="rounded-full px-8">

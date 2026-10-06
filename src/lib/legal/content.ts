@@ -40,11 +40,11 @@ export const termsDocument: LegalDocument = {
       title: "3. Kiralama talepleri",
       paragraphs: [
         "Kiralama talebi, hizmetin kesinleşmesi anlamına gelmez. Talep; personelin onayı ve taraflar arasındaki iletişim sonrası netleşir.",
-        "MVP aşamasında platform üzerinden ödeme alınmaz. Ücret, kapsam ve randevu detayları taraflar arasında ayrıca belirlenir.",
+        "Ödemeler platform üzerinden, lisanslı ödeme kuruluşu (iyzico) aracılığıyla alınır. Ücreti temizlik personeli, platformun belirlediği taban ve tavan aralığında kendisi belirler. Platform, tek seferlik işlerde personelin payından %15, paket (abonelik) müşterilerinde %12 aracılık komisyonu keser; müşteriden tek seferlik işlerde %6 (en az 79 TL) hizmet bedeli alınır.",
       ],
       bullets: [
         "Talep oluştururken paylaştığınız adres, saat ve notlar yalnızca hizmetin yürütülmesi için kullanılır.",
-        "Taraflar, iptal ve erteleme koşullarını doğrudan birbirleriyle mutabık kalarak belirler.",
+        "Randevuya 24 saatten fazla kala iptal ücretsizdir; 24 saatten az kala iptalde ücretin %50'si personele aktarılır. Platform dışında ödeme veya doğrudan ücret anlaşması yapılmamalıdır; bu durumda platform güvencesi geçerli olmaz.",
       ],
     },
     {
@@ -148,8 +148,8 @@ export const disclaimerDocument: LegalDocument = {
       id: "payment",
       title: "4. Ödeme ve uyuşmazlık",
       paragraphs: [
-        "MVP kapsamında tahsilat platform üzerinden yapılmaz. Ücret ve iade konuları taraflar arasında ayrıca çözülür.",
-        "Anlaşmazlık halinde taraflar öncelikle doğrudan iletişim kurmalı; gerekirse yasal mercilere başvurmalıdır.",
+        "Tahsilat platform üzerinden yapılır. Ödeme, hizmet tamamlanıp 24 saatlik itiraz süresi geçene kadar ödeme kuruluşunun güvenli havuzunda bekletilir, ardından personelin payı komisyon düşülerek aktarılır. İade talepleri platform üzerinden değerlendirilir.",
+        "Anlaşmazlık halinde taraflar öncelikle platformun destek kanalına başvurmalı; platform aracı hizmet sağlayıcı sıfatıyla uyuşmazlığın çözümüne aracılık eder. Gerekirse yasal mercilere başvurulabilir.",
       ],
     },
     {

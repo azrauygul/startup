@@ -1,8 +1,9 @@
-export const MIN_DAILY_RATE = 500;
+/** Tam gün (8 saat) taban ücret; docs/research.md §1.2 (Ekim 2026). */
+export const MIN_DAILY_RATE = 2_800;
 /** ~22 iş günü × minimum günlük ücret */
-export const MIN_MONTHLY_RATE = 11_000;
-export const DEFAULT_DAILY_RATE = 500;
-export const DEFAULT_MONTHLY_RATE = 11_000;
+export const MIN_MONTHLY_RATE = 61_600;
+export const DEFAULT_DAILY_RATE = 2_800;
+export const DEFAULT_MONTHLY_RATE = 61_600;
 
 export const CLEANING_TYPES = [
   "Genel ev temizliği",
